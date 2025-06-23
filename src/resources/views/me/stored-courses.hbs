@@ -1,0 +1,101 @@
+<div class="mt-4">
+    <div>
+        <h3>Công việc của tôi</h3>
+        <a href="/me/trash/courses">Thùng rác</a>
+    </div>
+
+
+    <table class="table mt-4">
+        <thead>
+            <tr>
+                <th scope="col">
+                    ID
+                    {{{sortable '_id' _sort}}}
+                </th>
+                <th scope="col">
+                    Tên công việc
+                    {{{sortable 'name' _sort}}}
+                   
+                </th>
+                <th scope="col">
+                    Chi tiết
+                    {{{sortable 'deTail' _sort}}}
+                </th>
+                <th scope="col" colspan="2">
+                    Thời gian tạo
+                    {{{sortable 'createdAt' _sort}}}
+                </th>
+
+            </tr>
+        </thead>
+        <tbody>
+            {{#each courses}}
+            <tr>
+                {{!-- helper sum = a + b  để số thứ tự chạy từ 1--}}
+                {{!-- <th scope="row">{{sum @index 1}}</th> --}}
+
+                <th scope="row">{{this._id}}</th>
+                <td>{{this.name}}</td>
+                <td>{{this.deTail}}</td>
+                <td>{{this.createdAt}}</td>
+                <td>
+                    <div class="d-flex gap-2">
+                        <a href="/courses/{{this._id}}/edit" class="btn btn-sm btn-outline-primary">Sửa</a>
+                        <!-- Nút Xóa -->
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#delete-course-modal"
+                                data-id="{{this._id}}">
+                            Xóa
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="5" class="text-center">
+                    Bạn chưa đăng công việc nào.
+                    <a href="/courses/create">Đăng công việc</a>
+                </td>
+            </tr>
+            {{/each}}
+        </tbody>
+</table>
+</div>
+
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="delete-course-modal" tabindex="-1" aria-labelledby="deleteCourseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                Bạn có chắc chắn muốn xóa công việc ?
+            </div>
+            <div class="modal-footer">
+                <form method="POST" id="delete-course-form">
+                    <button type="submit" class="btn btn-danger">Xóa</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{!-- Delete hidden form --}}
+<form method="post"></form>
+<script>
+    const deleteModal = document.getElementById('delete-course-modal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const courseId = button.getAttribute('data-id');
+
+        const form = deleteModal.querySelector('#delete-course-form');
+        form.action = `/courses/${courseId}?_method=DELETE`;
+    });
+</script>
+
+

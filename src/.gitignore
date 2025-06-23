@@ -1,0 +1,17 @@
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+
+# Môi trường
+.env
+
+# Cache
+.cache/
+dist/
+build/
+
+# VSCode config
+.vscode/
