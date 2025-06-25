@@ -1,0 +1,15 @@
+# .gitignore
+
+# Thư mục cần loại trừ
+node_modules/
+logs/
+reports/
+.env
+*.log
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Docker
+*.pid

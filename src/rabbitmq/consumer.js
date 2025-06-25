@@ -1,35 +1,48 @@
+// src/rabbitmq/consumer.js
 const amqp = require('amqplib');
+const generateDailyReport = require('../cron/dailyReport');
 
-async function receiveMsg() {
+async function initConsumer(retries = 5, delay = 3000) {
+  let attempt = 0;
+
+  while (attempt < retries) {
     try {
-        const conn = await amqp.connect('amqp://localhost:5672');
-        const channel = await conn.createChannel();
-        const queue = 'tasks';
+      const conn = await amqp.connect('amqp://rabbitmq');
+      const channel = await conn.createChannel();
+      const queue = 'tasks';
 
-        await channel.assertQueue(queue, { 
-            durable: true,
-            arguments: { 'x-message-ttl': 60000 }
-        });
+      await channel.assertQueue(queue, { durable: true });
 
-        console.log("👂 Waiting for messages in queue:", queue);
+      console.log('👂 Listening to queue:', queue);
 
-        channel.consume(queue, (msg) => {
-            if (msg !== null) {
-                const content = JSON.parse(msg.content.toString());
-                console.log("✅ Received:", content);
+      channel.consume(queue, async (msg) => {
+        if (msg !== null) {
+          const job = JSON.parse(msg.content.toString());
+          console.log('📥 Received job:', job);
 
-                // Giả lập xử lý
-                setTimeout(() => {
-                    console.log("🛠 Done processing:", content.id);
-                    // Nchannel.ack : consumer bị crash trước khi xử lý xong → RabbitMQ gửi lại message cho consumer khác.
-                    channel.ack(msg); // Xác nhận đã xử lý 
-                }, 2000);
+          try {
+            if (job.type === 'generate_report') {
+              await generateDailyReport(job);
             }
-        }, { noAck: false });  // phải có channel.ack nếu không nó sẽ không xác nhận là đã xử lý
+            channel.ack(msg);
+          } catch (err) {
+            console.error('❌ Error handling job:', err.message);
+          }
+        }
+      });
 
-    } catch (err) {
-        console.error("Error:", err);
+      return; // thành công, kết thúc retry
+    } catch (error) {
+      attempt++;
+      console.error(`❌ Failed to start consumer (attempt ${attempt}):`, error.message);
+      if (attempt < retries) {
+        console.log(`🔁 Retrying in ${delay / 1000}s...`);
+        await new Promise(res => setTimeout(res, delay));
+      }
     }
+  }
+
+  console.error('❌ Max retries reached. Could not connect to RabbitMQ.');
 }
 
-receiveMsg();
+module.exports = initConsumer;

@@ -1,24 +1,31 @@
-version: '3.8'
-
 services:
   app:
-    image: node:20-alpine
-    working_dir: /app
+    container_name: blog-app
+    build:
+      context: .
+    working_dir: /app         # ✅ chuyển dòng này ra ngoài `build`
     volumes:
-      - ./:/app
+      - .:/app
       - /app/node_modules
-    command: sh -c "yarn install && yarn start"
     ports:
       - "3001:3000"
+    depends_on:
+      - mongo
+      - rabbitmq
     environment:
-      MONGODB_URI: mongodb://mongo:27017/blog 
+      MONGODB_URI: mongodb://mongo:27017/blog
+      RABBITMQ_URI: amqp://rabbitmq
+    command: sh -c "yarn install && yarn start"
 
   mongo:
     image: mongo:6
+    container_name: mongo-db
     ports:
       - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
 
-volumes:
-  mongo-data:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
