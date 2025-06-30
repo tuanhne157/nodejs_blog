@@ -6,6 +6,7 @@ const morgan = require('morgan'); // thong bao log
 const methodOverride = require('method-override')
 const { engine } = require('express-handlebars');
 
+
 require('./cron/dailyReport'); // ✅ Đúng
   // ✅ chỉ cần require để kích hoạt cron job
 
@@ -17,8 +18,16 @@ const port = 3000;
 const route = require('./routes');
 
 const db = require('./config/db');
+
+const initConsumer = require('./rabbitmq/consumer'); 
+require('./cron/jobScheduler'); 
+
 // Connect to DB
-db.connect();
+db.connect().then(() => {
+  console.log("✅ MongoDB connected");
+
+  initConsumer(); // 👈 KHỞI ĐỘNG consumer
+});
 
 // static file public , như img/logo.png
 app.use(express.static(path.join(__dirname, 'public')));

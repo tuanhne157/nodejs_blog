@@ -1,35 +1,32 @@
 const amqp = require('amqplib');
 
-async function receiveMsg() {
-    try {
-        const conn = await amqp.connect('amqp://localhost:5672');
-        const channel = await conn.createChannel();
-        const queue = 'tasks';
+async function initConsumer() {
+  try {
+    const conn = await amqp.connect('amqp://rabbitmq'); // ✅ đúng tên service Docker
+    const channel = await conn.createChannel();
+    const queue = 'tasks';
 
-        await channel.assertQueue(queue, { 
-            durable: true,
-            arguments: { 'x-message-ttl': 60000 }
-        });
+    await channel.assertQueue(queue, {
+      durable: true,
+      arguments: { 'x-message-ttl': 60000 }
+    });
 
-        console.log("👂 Waiting for messages in queue:", queue);
+    console.log("👂 Waiting for messages in queue:", queue);
 
-        channel.consume(queue, (msg) => {
-            if (msg !== null) {
-                const content = JSON.parse(msg.content.toString());
-                console.log("✅ Received:", content);
+    channel.consume(queue, (msg) => {
+      if (msg !== null) {
+        const content = JSON.parse(msg.content.toString());
+        console.log("✅ Received:", content);
 
-                // Giả lập xử lý
-                setTimeout(() => {
-                    console.log("🛠 Done processing:", content.id);
-                    // Nchannel.ack : consumer bị crash trước khi xử lý xong → RabbitMQ gửi lại message cho consumer khác.
-                    channel.ack(msg); // Xác nhận đã xử lý 
-                }, 2000);
-            }
-        }, { noAck: false });  // phải có channel.ack nếu không nó sẽ không xác nhận là đã xử lý
-
-    } catch (err) {
-        console.error("Error:", err);
-    }
+        setTimeout(() => {
+          console.log("🛠 Done processing:", content.id);
+          channel.ack(msg);
+        }, 2000);
+      }
+    }, { noAck: false });
+  } catch (err) {
+    console.error("❌ Consumer error:", err.message);
+  }
 }
 
-receiveMsg();
+module.exports = initConsumer;

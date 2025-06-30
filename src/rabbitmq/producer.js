@@ -1,34 +1,25 @@
-// giải quyết độ tin cậy  ttl,durable,persistent,noAck
 const amqp = require('amqplib');
 
-async function sendMsg() {
-    try {
-        const conn = await amqp.connect('amqp://localhost:5672');
-        const channel = await conn.createChannel();
-        const queue = 'tasks';
+async function sendToQueue(queue, data) {
+  try {
+    const conn = await amqp.connect('amqp://rabbitmq');
+    const channel = await conn.createChannel();
 
-        // durable : Queue không bị mất nếu RabbitMQ restart.
-        // Mặc định: durable: false → queue sẽ bị xóa khi broker restart.
-        await channel.assertQueue(queue, { 
-            durable: true,
-            arguments: { 'x-message-ttl': 60000 } // TTL:  Ý nghĩa: Message hết hạn sẽ bị loại bỏ sau 60s(giảm tắc nghẽn queue).
-        }); 
+    await channel.assertQueue(queue, {
+      durable: true,
+      arguments: { 'x-message-ttl': 60000 }
+    });
 
-        const msg = { text: "Xử lý ảnh", id: Date.now() };
-        const msgBuffer = Buffer.from(JSON.stringify(msg));
+    const buffer = Buffer.from(JSON.stringify(data));
+    channel.sendToQueue(queue, buffer, { persistent: true });
 
-        // persistent : Message sẽ được lưu vào disk, thay vì chỉ ở RAM.
-        // Kết hợp với durable queue để bảo vệ message khi broker crash.
-        channel.sendToQueue(queue, msgBuffer, { persistent: true });
-        console.log("📤 Sent:", msg);
+    console.log("📤 Sent to queue:", data);
 
-        await channel.close();
-        await conn.close();
-    } catch (err) {
-        console.error("Error:", err);
-    }
+    await channel.close();
+    await conn.close();
+  } catch (err) {
+    console.error("❌ Failed to send message:", err.message);
+  }
 }
 
-// gọi lại hàm để chạy, nếu không gọi thì hàm sẽ k chạy
-// JavaScript sẽ không tự chạy hàm nếu bạn không gọi nó
-sendMsg();
+module.exports = sendToQueue;

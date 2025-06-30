@@ -10,7 +10,7 @@ const path = require('path');
 // | *    | mỗi ngày trong tháng
 // | *    | mỗi tháng
 // | *    | mỗi ngày trong tuần
-cron.schedule('1 * * * *', () => {
+cron.schedule('* * * * *', () => {
   const now = new Date();
 
   // Tạo folder theo ngày, ví dụ: ./reports/2025-06-20
@@ -30,3 +30,5 @@ cron.schedule('1 * * * *', () => {
 
   console.log("✅ Daily report created:", filePath);
 });
+
+console.log("⏰ Cron job đã được khởi tạo");
